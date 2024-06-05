@@ -1,0 +1,7 @@
+# Compilation of Ledger's app
+bin/
+elfs/
+debug/
+build/
+.DS_Store
+.idea
