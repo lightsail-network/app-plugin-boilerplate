@@ -1,0 +1,3 @@
+[submodule "stellar_plugin_sdk"]
+	path = stellar_plugin_sdk
+	url = https://github.com/lightsail-network/stellar-plugin-sdk.git
