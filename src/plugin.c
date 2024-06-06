@@ -7,6 +7,9 @@
 #define TOKEN_SYMBOL "TCOIN"
 #define TOKEN_DECIMALS 7
 
+/**
+ * Initialize the plugin for a given contract.
+ */
 void handle_init_contract(stellar_plugin_init_contract_t *msg) {
   // Make sure we are running a compatible version.
   if (msg->interface_version != STELLAR_PLUGIN_INTERFACE_VERSION_LATEST) {
@@ -18,6 +21,9 @@ void handle_init_contract(stellar_plugin_init_contract_t *msg) {
   msg->result = STELLAR_PLUGIN_RESULT_OK;
 }
 
+/**
+ * Query the plugin for the number of data pairs it can provide.
+ */
 void handle_query_data_pair_count(stellar_plugin_query_data_pair_count_t *msg) {
   invoke_contract_args_t invoke_contract_args;
   if (msg->plugin_shared_ro->envelope->type ==
@@ -35,6 +41,10 @@ void handle_query_data_pair_count(stellar_plugin_query_data_pair_count_t *msg) {
          invoke_contract_args.function.name_size);
 
   // if the function name is `transfer`, we will return 3 data pairs.
+  // The data pairs are:
+  // 1. Transfer amount
+  // 2. From
+  // 3. To
   if (strcmp(function_name, "transfer") == 0) {
     msg->data_pair_count = 3;
     msg->result = STELLAR_PLUGIN_RESULT_OK;
@@ -53,6 +63,9 @@ void handle_query_data_pair_count(stellar_plugin_query_data_pair_count_t *msg) {
   return;
 }
 
+/**
+ * Query the plugin for a specific data pair.
+ */
 void handle_query_data_pair(stellar_plugin_query_data_pair_t *msg) {
   invoke_contract_args_t invoke_contract_args;
   if (msg->plugin_shared_ro->envelope->type ==
@@ -74,13 +87,20 @@ void handle_query_data_pair(stellar_plugin_query_data_pair_t *msg) {
 
   // Return the data pair.
   if (strcmp(function_name, "transfer") == 0) {
+    // The user is invoking the `transfer` function.
+    // `msg->data_pair_index` represents which pair of data we should return.
+    // interface `fn transfer(env: Env, from: Address, to: Address, amount:
+    // i128);`
     switch (msg->data_pair_index) {
     case 0: {
+      // buffer->offset is the position of the first parameter.
       strlcpy(msg->caption, "Transfer", msg->caption_len);
       if (!read_scval_advance(&buffer) || !read_scval_advance(&buffer)) {
         msg->result = STELLAR_PLUGIN_RESULT_ERROR;
       }
 
+      // `amount` is the third parameter, so we need to parse `from` and `to`
+      // first, and then parse `amount`.
       uint32_t sc_type;
       if (!parse_uint32(&buffer, &sc_type) || sc_type != SCV_I128 ||
           !print_int128(buffer.ptr + buffer.offset, TOKEN_DECIMALS, msg->value,
@@ -96,6 +116,7 @@ void handle_query_data_pair(stellar_plugin_query_data_pair_t *msg) {
       sc_address_t from;
       uint32_t sc_type;
 
+      // `from` is the first parameter, so we can parse it directly.
       if (!parse_uint32(&buffer, &sc_type) || sc_type != SCV_ADDRESS ||
           !parse_sc_address(&buffer, &from) ||
           !print_sc_address(&from, msg->value, msg->value_len, 0, 0)) {
@@ -112,7 +133,8 @@ void handle_query_data_pair(stellar_plugin_query_data_pair_t *msg) {
 
       sc_address_t to;
       uint32_t sc_type;
-
+      // `to` is the second parameter, so we need to parse `from` first, and
+      // then parse `to`.
       if (!parse_uint32(&buffer, &sc_type) || sc_type != SCV_ADDRESS ||
           !parse_sc_address(&buffer, &to) ||
           !print_sc_address(&to, msg->value, msg->value_len, 0, 0)) {

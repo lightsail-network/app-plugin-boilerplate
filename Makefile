@@ -16,7 +16,7 @@
 # ****************************************************************************
 
 # EDIT THIS: Application name
-APPNAME = "StellarTest"
+APPNAME = "Boilerplate"
 
 # Application version
 APPVERSION_M = 1
